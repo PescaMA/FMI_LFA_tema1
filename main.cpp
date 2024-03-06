@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <stack>
 #include <deque>
+#include <list>
 
 class FA
 {
@@ -14,7 +15,7 @@ protected:
     std::vector<int> states;
     int initialState;
     std::unordered_set<int> finalStates;
-    std::unordered_map<int, std::unordered_map<char,std::vector<int> > > tranz; /// tranzitii
+    std::unordered_map<int, std::unordered_map<char,std::unordered_set<int> > > tranz; /// tranzitii
 
     void runTests(std::istream& in,std::ostream& out)
     { /// fara accepted() implementat, functia asta nu are sens momentan.
@@ -57,7 +58,7 @@ public:
             int startNode, endNode; /// starea de plecare si terminare a tranzitiei (muchiei)
             char letter; /// simbolul din limbaj.
             in >> startNode >> endNode >> letter;
-            tranz[startNode][letter].push_back(endNode);
+            tranz[startNode][letter].insert(endNode);
         }
         in >>initialState;
         std::string listFinals;
@@ -100,7 +101,7 @@ public:
         {
             if(tranz[node].find(word[i]) == tranz[node].end())
                 return false;
-            node = tranz[node][word[i]][0]; /// ar trebui sa existe doar o muchie pt litera curenta.
+            node = *(tranz[node][word[i]].begin()); /// ar trebui sa existe doar o muchie pt litera curenta.
         }
         return (finalStates.find(node) != finalStates.end());
     }
@@ -134,7 +135,7 @@ public:
             return false;
         std::deque<int> prevNodes;
         prevNodes.push_back(initialState);
-        std::stack< std::vector<int>::iterator > its;
+        std::stack< std::unordered_set<int>::iterator > its;
         its.push(tranz[initialState][word[0]].begin());
         for(int i=1;i >= 0; i++)
         {
@@ -234,6 +235,72 @@ public:
     void path(std::string word)    {
         acceptedLONG(word,true);
     }
+    std::deque<int> getLambdaPath(int prevNode, char c, int nextNode)
+    {
+        std::unordered_map<int,int> lambdaPath;
+        lambdaPath[prevNode] = prevNode;
+        std::stack<int> stk;
+        stk.push(prevNode);
+        while(!stk.empty())
+        {
+            int node = stk.top();
+            if(tranz[node][c].find(nextNode) != tranz[node][c].end())
+                break;
+            stk.pop();
+
+
+            for (const auto& sameNode:tranz[node]['0'])
+            {
+                if(lambdaPath.find(sameNode) != lambdaPath.end())
+                    continue;
+                stk.push(sameNode);
+                lambdaPath[sameNode] =  node;
+            }
+        }
+        if(stk.empty() || tranz[stk.top()][c].find(nextNode) == tranz[stk.top()][c].end())
+            return {};
+        int node = stk.top();
+        std::deque<int> result;
+        while(node != lambdaPath[node])
+        {
+            result.push_back(node);
+            node = lambdaPath[node];
+        }
+        result.push_back(nextNode);
+        return result;
+    }
+    void printPath(std::string word, std::deque<std::pair<int,int> >  removedNodes)
+    {
+        int nodes[word.size()]; /// the correct path nodes (the last removed nodes per place in the word)
+        for (const auto& nodeI : removedNodes)
+            nodes[nodeI.second] = nodeI.first;
+        std::deque< int > result;
+        result.push_back(nodes[0]);
+
+        for(int i=1;i<=word.size();i++)
+        {
+            if(tranz[result.back()][word[i-1]].find(nodes[i])
+               != tranz[result.back()][word[i-1]].end())
+            {
+                result.push_back(nodes[i]);
+                continue;
+            }
+            /// now we know we used lambdas to get to node[i].
+
+            std::deque<int> lambdaPath = getLambdaPath(result.back(),word[i-1],nodes[i]);
+            while(!lambdaPath.empty())
+            {
+                result.push_back(lambdaPath.front());
+                lambdaPath.pop_front();
+            }
+        }
+
+        while(!result.empty())
+        {
+            std::cout << result.front() << ' ' ;
+            result.pop_front();
+        }
+    }
     bool acceptEmpty()
     {
         if(finalStates.find(initialState) != finalStates.end())
@@ -250,17 +317,26 @@ public:
         std::stack<std::pair<int,int> > stk;
         stk.push({initialState,0});
 
+        std::deque<std::pair<int,int> >  removedNodes;
+
         while(!stk.empty())
         {
             std::unordered_set<int> same,viz;
             int node = stk.top().first;
             int i = stk.top().second;
-            stk.pop();
 
+            removedNodes.push_back(stk.top());
+
+            stk.pop();
             if(i == word.size())
             {
                 if(finalStates.find(node) != finalStates.end())
+                {
+                    if(outputPath)
+                        printPath(word, removedNodes);
                     return true;
+                }
+
                 continue;
             }
 
