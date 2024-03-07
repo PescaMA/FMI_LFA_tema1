@@ -1,0 +1,40 @@
+Topic 1 LFA
+a) Implement a deterministic finite automaton (DFA).
+The program reads the following information from the "input.txt" file:
+-on the first line, the number of states of the automaton (called N)
+- on the second line, the states of the automaton (whole numbers, not necessarily consecutive) - on the third line, the number of transitions (let's write it M)
+- on the following M lines, the description of a transition, in the format:
+-xy I, where x is the state (node) from which the transition (edge, arc) starts
+y is the state in which the transition reaches, I is the letter of the transition
+- on the next line is written a natural number S, which means the initial state - on the next line we find nrF, which means the number of final states
+-on the next line we find nrF integers (nrF<=N), representing the final states
+- on the next line we find NrCuv, which means the number of words to be checked
+- on the following NrCuv lines there is one word each
+Your program must display, in the "output.txt" file, on nrCuv separate lines, one of the appropriate words YES or NO, signifying whether or not the respective word is accepted by the machine.
+Note: the alphabet of the language described by the machine will only consist of small letters of the English alphabet, and the machine is complete
+
+
+b) Implement a non-deterministic finite automaton (NFA).
+The program reads the following information from the file:
+-on the first line, the number of states of the automaton (called N)
+- on the second line, the states of the automaton (whole numbers, not necessarily consecutive) - on the third line, the number of transitions (let's write it M)
+- on the following M lines, the description of a transition, in the format:
+-x y I, where x is the state (node) from which the transition (edge, arc) starts
+y is the state in which the transition reaches, I is the letter of the transition
+- on the next line is written a natural number S, which means the initial state
+-on the next line we find nrF, which means the number of final states
+-on the next line we find nrF integers (nrF<=N), representing the final states
+- on the next line we find NrCuv, which means the number of words to be checked
+- on the following NrCuv lines there is one word each
+Your program must display, in the "output.txt" file, on nrCuv separate lines, one of the appropriate words YES or NO, signifying whether or not the respective word is accepted by the machine.
+Note 1: the alphabet of the language described by the machine will consist only of small letters of the English alphabet
+Note 2: the automaton read is not necessarily complete
+
+c) Implement a Lambda-NFA. Both the NFA must be read from the file and the program must check, for several words read from the file, if they are accepted or not by the machine. Watch out for the case where there are loops with lambdas.
+Bonus: also show the sequence of states (the path) from the initial state to the state that accepts the word.
+
+
+Grading: 3 points for each problem, with a point from the office it adds up to 10. For exceptional solutions, or for activity in the laboratory, you can reach a grade of 11 or 12. If you find more interesting solutions to problems b) and c), I appreciate it. But the default solution I ask of you is with BFS/DFS (and the graph would preferably be kept in memory as an adjacency list or adjacency matrix, unless you have a good reason to keep it in other ways, like would be list of edges).
+Send your solutions (written in a programming language of your choice) to the email address: smit.oanea@s.unibuc.ro
+Mention in the email the number of the group you belong to.
+Good luck!
