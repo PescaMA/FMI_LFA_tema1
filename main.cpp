@@ -275,7 +275,7 @@ protected:
         for(const auto& lambdaNode:same)
             if(finalStates.find(lambdaNode) != finalStates.end())
                 return lambdaNode;
-        throw std::logic_error("NoFinishNodeFound");
+        return node;
     }
 
     bool acceptedEmpty(bool outputPath = false){
