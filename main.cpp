@@ -86,7 +86,6 @@ std::istream& operator>>(std::istream& in, FA& myFA){
     myFA.read(in);
     return in; /// used read so I could write that inside the class.
 }
-
 class DFA : public FA{
 public:
     using FA::runTests; /// to make the runTests public.
@@ -105,10 +104,7 @@ public:
         return (finalStates.find(node) != finalStates.end());
     }
 };
-
-
-class NFA : public FA
-{
+class NFA : public FA{
 public:
     using FA::runTests;
     void path(std::string word){
@@ -163,9 +159,7 @@ public:
         return false;
     }
 };
-
-/// the lambda non deterministic finite automata. The most important one, NFAs and DFAs being special cases of this.
-class l_NFA : public FA{
+class l_NFA : public FA{ /// the lambda non deterministic finite automata. The most important one, NFAs and DFAs being special cases of this.
 protected:
     void path(std::string word){ accepted(word,true); }
     bool checkTransition(int prevNode,char c,int nextNode){ /// checks if transition exists.
@@ -204,7 +198,7 @@ protected:
         }
         return lambdaPath;
     }
-    std::deque<int> getLambdaPath(int startNode,int endNode){
+    std::deque<int> getLambdaPath(int startNode,int endNode){/// gets a path between a node and a reachable lambda
         if(startNode == endNode) return {};
         std::unordered_map<int,int> lambdaPath = getLambdaPrevious(startNode);
 
@@ -216,8 +210,7 @@ protected:
         return result;
     }
 
-    /// helper function to get the lambda path between 2 nodes (used in printing path).
-    std::deque<int> getLambdaTransitionPath(int prevNode, char c, int nextNode){
+    std::deque<int> getLambdaTransitionPath(int prevNode, char c, int nextNode){ /// gets a path to a node that passes through lambda transitions
 
         int lastNode = getLambdaLast(prevNode,c,nextNode);
         if(!checkTransition(lastNode,c,nextNode))
@@ -226,35 +219,46 @@ protected:
         std::deque<int> result = getLambdaPath(prevNode,lastNode);
         return result;
     }
+    std::unordered_set<int> getReachableLambda(int node){
+        std::unordered_set<int> same;
+        auto reachableFrom = getLambdaPrevious(node);
+        for(const auto& sameNode:reachableFrom)
+            same.insert(sameNode.first);
+        return same;
+    }
     void printPath(std::string word, std::deque<std::pair<int,int> >removedNodes){
-        int pathNodes[word.size()]; /// the correct path nodes (the last removed nodes per place
-        /// in the word, because if an index was removed multiple times it means the path didn't
-        /// lead to the end for all but the last one)
+        int pathNodes[word.size() + 2]; /// the correct path nodes (the last removed nodes per placein the word,
+        /// because if an index was removed multiple times it means the path didn't lead to the end for all but the last one)
 
         for (const auto& node : removedNodes)
             pathNodes[node.second] = node.first; /// second = i, index of letter; first = node
 
-        std::deque< std::pair<int,char> > result;
+        std::deque< std::pair<int,char> > result; /// contains node and transition to get there.
         result.emplace_back(pathNodes[0],' '); /// should be the start node.
 
-        for(unsigned int i=1;i<=word.size();i++)
-        {
+        for(unsigned int i=1;i<=word.size();i++){ /// will add the lambda transitions when there isn't a direct path
             int node = result.back().first;
 
-            if(edges[node][word[i-1]].find(pathNodes[i]) == edges[node][word[i-1]].end()){
+            if(checkTransition(node,word[i-1],pathNodes[i])){
                 std::deque<int> lambdaPath = getLambdaTransitionPath(node,word[i-1],pathNodes[i]);
                 for(const auto& lambdaNode:lambdaPath)
-                    result.emplace_back(lambdaNode,'@');
+                    result.emplace_back(lambdaNode,LAMBDA);
             }
             result.emplace_back(pathNodes[i],word[i-1]);
         }
+        /// if last node isn't a final state, add lambda transitions to final state
         int node = result.back().first;
+        if(!isFinishReachable(node))
+            throw std::logic_error("NoPathFound");
+
         std::deque<int> lambdaPath = getLambdaPath(node,getFinishNode(node));
         for(const auto& lambdaNode:lambdaPath)
-                result.emplace_back(lambdaNode,'@');
+            result.emplace_back(lambdaNode,LAMBDA);
 
-        while(!result.empty())
-        {
+        printWithSymbol(result);
+    }
+    void printWithSymbol(std::deque<std::pair<int,char> > result){
+        while(!result.empty()){
             std::cout << result.front().first << ' ' ;
             result.pop_front();
             if(!result.empty())
@@ -271,41 +275,19 @@ protected:
         for(const auto& lambdaNode:same)
             if(finalStates.find(lambdaNode) != finalStates.end())
                 return lambdaNode;
-        return node;
+        throw std::logic_error("NoFinishNodeFound");
     }
-    std::unordered_set<int> getReachableLambda(int node){
-        std::unordered_set<int> same;
-        std::stack<int> startNodes; /// nodes that can be reached by lambda paths (start next edge)
-        startNodes.push(node);
-        same.insert(node);
 
-        /// calcualtes the set of nodes which we can begin from
-        while(!startNodes.empty())
-        {
-            int sameNode = startNodes.top();
-            startNodes.pop();
-            /// add all new lambda edges to the set (and to be verified).
-            for (const auto& nextNode:edges[sameNode][LAMBDA])
-            {
-                if(same.find(nextNode) == same.end())
-                {
-                    same.insert(nextNode);
-                    startNodes.push(nextNode);
-                }
-            }
-        }
-        return same;
-    }
     bool acceptedEmpty(bool outputPath = false){
         if(!isFinishReachable(startState))
             return false;
         if(!outputPath)
             return true;
+
         std::deque<int> path = getLambdaPath(startState,getFinishNode(startState));
         if(finalStates.find(startState) != finalStates.end())
             path.push_back(startState);
-        while(!path.empty())
-        {
+        while(!path.empty()){
             std::cout << path.front();
             path.pop_front();
             if(!path.empty())
@@ -321,21 +303,17 @@ public:
         if(word.empty()) /// special case
             return acceptedEmpty(outputPath);
 
-        std::stack<std::pair<int,int> > stk; /// remembers the nodes and the index of the added nodes
-        /// to the iterative depth first search "simulated" stack
+        std::stack<std::pair<int,int> > stk; /// remembers the nodes and the index of the added nodes to the iterative depth first search "simulated" stack
         stk.push({startState,0});
 
-        std::deque<std::pair<int,int> >  removedNodes; /// remembers the nodes and the index of the popped nodes.
-        ///`Used for rebuilding and printing the path.
+        std::deque<std::pair<int,int> >  removedNodes; /// remembers the nodes and the index of the popped nodes. Used for rebuilding and printing the path.
 
         while(!stk.empty())
         {
-
             int node = stk.top().first;
             unsigned int i = stk.top().second;
             removedNodes.push_back(stk.top());
             stk.pop();
-            ///std::cout <<"nod/i: " <<  node << ' ' << i << '\n';
 
             if(visited[i].find(node) != visited[i].end())
                 continue;
@@ -343,14 +321,11 @@ public:
 
             if(i == word.size())
             {/// reached the end of the word. Finish or backtrack
-                if(isFinishReachable(node))
-                {
-                    if(outputPath)
-                        printPath(word, removedNodes);
-                    return true;
-                }
-
-                continue;
+                if(!isFinishReachable(node))
+                    continue; /// don't add next transitions.
+                if(outputPath)
+                    printPath(word, removedNodes);
+                return true;
             }
 
             std::unordered_set<int> same,vis; /// "same" is for nodes reachable with a lambda path
@@ -371,10 +346,10 @@ public:
 };
 NFA l_NFA::to_NFA()
 {
-    FA original;
+    FA original; /// keep old data to copy it back.
     original.set_FA(this->get_FA());
 
-    std::deque<int> nodes;
+    std::deque<int> nodes; /// all nodes(states) that have transitions
     for(const auto& edge:edges)
         nodes.push_back(edge.first);
 
