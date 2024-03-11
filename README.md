@@ -3,7 +3,7 @@
 Finite automata acceptor written in C++ (C++11). Can Load an Lambda-Non deterministic finite automata and run on different inputs. The states are integers and the symbols are chars. 
 
 
-I considered lambda as the character "@". The rest of the symbols can be any other ascii character (C++ char).
+I considered lambda as the character "@". I consider the empty word to be the symbol "_". The rest of the symbols can be any other ascii character (C++ char).
 
 ## Installation
 
